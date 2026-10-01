@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Aliximber/Desktop/Proyectos/PERSONALES/ORC/src/app/page.tsx"],"sourcesContent":["import { redirect } from 'next/navigation';\n\n// La pantalla de inicio ya no existe — la app arranca directo en el workspace\nexport default function HomePage() {\n  redirect('/workspace');\n}\n"],"names":["HomePage"],"mappings":";;;;AAAA;AAAA;;AAGe,SAASA;IACtB,IAAA,iMAAQ,EAAC;AACX"}}]
+}

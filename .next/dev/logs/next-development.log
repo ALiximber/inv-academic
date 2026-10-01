@@ -1,0 +1,19 @@
+{"timestamp":"00:00:10.383","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:01:58.577","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
+{"timestamp":"00:02:49.174","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 2000ms... (4 attempts left)"}
+{"timestamp":"00:03:05.815","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 4000ms... (3 attempts left)"}
+{"timestamp":"00:03:46.242","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 8000ms... (2 attempts left)"}
+{"timestamp":"00:04:33.641","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 16000ms... (1 attempts left)"}
+{"timestamp":"00:05:17.962","source":"Server","level":"ERROR","message":"Analysis error: ApiError: {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}"}
+{"timestamp":"00:44:48.184","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 2000ms... (4 attempts left)"}
+{"timestamp":"00:44:54.724","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 4000ms... (3 attempts left)"}
+{"timestamp":"00:44:59.274","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 8000ms... (2 attempts left)"}
+{"timestamp":"00:45:08.367","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 16000ms... (1 attempts left)"}
+{"timestamp":"00:45:31.698","source":"Server","level":"ERROR","message":"Analysis error: ApiError: {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}"}
+{"timestamp":"00:51:45.968","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 2000ms... (4 attempts left)"}
+{"timestamp":"00:51:50.938","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 4000ms... (3 attempts left)"}
+{"timestamp":"00:51:56.867","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 8000ms... (2 attempts left)"}
+{"timestamp":"00:52:06.075","source":"Server","level":"WARN","message":"[Gemini API] Error 503. Retrying in 16000ms... (1 attempts left)"}
+{"timestamp":"00:52:22.510","source":"Server","level":"ERROR","message":"Analysis error: ApiError: {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}"}
+{"timestamp":"00:52:35.093","source":"Server","level":"LOG","message":"✓ Compiled in 411ms"}
+{"timestamp":"00:54:28.103","source":"Server","level":"LOG","message":"✓ Compiled in 39ms"}

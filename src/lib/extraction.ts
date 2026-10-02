@@ -3,7 +3,6 @@
    ========================================================== */
 
 import mammoth from 'mammoth';
-import pdf from 'pdf-parse';
 import { ExtractionResult } from './types';
 
 const MAX_TEXT_LENGTH = 100000; // ~100K characters
@@ -78,7 +77,9 @@ async function extractDocx(buffer: Buffer, warnings: string[]): Promise<string> 
 }
 
 async function extractPdf(buffer: Buffer, warnings: string[]): Promise<string> {
-  const data = await pdf(buffer);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string; numpages: number }>;
+  const data = await pdfParse(buffer);
 
   if (!data.text || data.text.trim().length === 0) {
     throw new Error(

@@ -53,6 +53,34 @@ export default function WorkspacePage() {
 
   const highlightRefs = useRef<Map<string, HTMLElement>>(new Map());
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const isDragging = useRef(false);
+  const [panelWidth, setPanelWidth] = useState(320);
+  const [dragging, setDragging] = useState(false);
+
+  // ── Panel resize
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    setDragging(true);
+    const startX = e.clientX;
+    const startW = panelRef.current?.offsetWidth ?? panelWidth;
+
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = startX - ev.clientX;
+      const next = Math.min(600, Math.max(240, startW + delta));
+      setPanelWidth(next);
+    };
+    const onUp = () => {
+      isDragging.current = false;
+      setDragging(false);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [panelWidth]);
 
   // ── File upload
   const handleFileUpload = useCallback(async (
@@ -365,7 +393,17 @@ export default function WorkspacePage() {
         {/* ══════════════════════════════════════════
             RIGHT — Config / Results panel
         ══════════════════════════════════════════ */}
-        <aside className="side-panel">
+        <aside
+          className="side-panel"
+          ref={panelRef}
+          style={{ width: panelWidth }}
+        >
+          {/* Resize handle — drag left edge to resize */}
+          <div
+            className={`panel-resize-handle${dragging ? ' panel-resize-handle--dragging' : ''}`}
+            onMouseDown={startResize}
+            title="Arrastrar para redimensionar"
+          />
 
           {/* Panel tabs */}
           <div className="side-panel__tabs">

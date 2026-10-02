@@ -368,6 +368,13 @@ input, textarea { font-family: var(--font); }
   cursor: default;
 }
 
+/* Reset browser UA styles for <mark> inside the editor.
+   Done here (parent + element) so .hlmark category classes keep specificity */
+.editor-pane__highlighted mark {
+  background: transparent;
+  color: inherit;
+}
+
 /* Edit bar below highlighted text */
 .editor-pane__edit-bar {
   display: flex;
@@ -393,10 +400,8 @@ input, textarea { font-family: var(--font); }
 .editor-pane__edit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ── Highlight marks ── */
-/* Use 'mark.hlmark' for specificity over browser UA stylesheet */
-mark.hlmark, .hlmark {
-  background: transparent !important; /* override UA yellow background */
-  color: var(--text-primary) !important; /* override UA black text */
+.hlmark {
+  background: transparent;
   border-bottom: 2px solid;
   cursor: pointer;
   border-radius: 0;

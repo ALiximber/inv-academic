@@ -19,7 +19,7 @@ function getAI(): GoogleGenAI {
   return ai;
 }
 
-export async function analyzeText(prompt: string, studentText: string): Promise<EvaluationResult> {
+export async function analyzeText(prompt: string): Promise<EvaluationResult> {
   const client = getAI();
 
   let response;

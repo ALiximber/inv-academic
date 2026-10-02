@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Gemini
-    const result = await analyzeText(prompt, normalizedStudentText);
+    const result = await analyzeText(prompt);
 
     // Validate observation positions
     const { validated, unmatched } = validateAllObservations(

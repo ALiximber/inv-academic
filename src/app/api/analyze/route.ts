@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeText } from '@/lib/gemini';
 import { buildAcademicPrompt } from '@/lib/prompts/academic';
 import { buildBriefPrompt } from '@/lib/prompts/brief';
-import { ACADEMIC_GENRES } from '@/lib/genres';
+import { ACADEMIC_GENRES, findGenreById } from '@/lib/genres';
 import { normalizeText } from '@/utils/textNormalization';
 import { validateAllObservations } from '@/utils/fragmentMatcher';
 import type { AnalysisRequest, EvaluationResult } from '@/lib/types';
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (body.reviewType === 'academic') {
       // Find genre
-      const genre = ACADEMIC_GENRES.find((g) => g.id === body.genre);
+      const genre = findGenreById(body.genre);
       if (!genre) {
         return NextResponse.json(
           { error: 'Género académico no válido.' },
@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      genreName = genre.id === 'otro' && body.customGenreName
+      const isCustomOrGeneric = genre.id === 'generico' || genre.id === 'otro';
+      genreName = isCustomOrGeneric && body.customGenreName
         ? body.customGenreName
         : genre.name;
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Gemini
-    const result = await analyzeText(prompt);
+    const result = await analyzeText(prompt, normalizedStudentText);
 
     // Validate observation positions
     const { validated, unmatched } = validateAllObservations(

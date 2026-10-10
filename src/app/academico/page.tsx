@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ACADEMIC_GENRES, REVIEW_DIMENSIONS } from '@/lib/genres';
+import { ACADEMIC_GENRES, REVIEW_DIMENSIONS, findGenreById } from '@/lib/genres';
 import type { AcademicGenre, EvaluationResult, ExtractionResult } from '@/lib/types';
 import ResultsView from '@/components/results/ResultsView';
 
@@ -16,6 +16,13 @@ export default function AcademicoPage() {
   const [selectedGenre, setSelectedGenre] = useState<AcademicGenre | null>(null);
   const [customGenreName, setCustomGenreName] = useState('');
   const [customGenreDesc, setCustomGenreDesc] = useState('');
+  const [detectingGenre, setDetectingGenre] = useState(false);
+  const [detectionSample, setDetectionSample] = useState('');
+  const [detectionResult, setDetectionResult] = useState<{
+    genreName: string;
+    confidence: string;
+    reason: string;
+  } | null>(null);
 
   // Step 2: Config
   const [dimensions, setDimensions] = useState<string[]>(
@@ -96,12 +103,53 @@ export default function AcademicoPage() {
     });
   };
 
+  // Detect genre
+  const handleDetectGenre = async (textToDetect: string) => {
+    const t = textToDetect.trim();
+    if (t.length < 20) {
+      setError('Ingresa al menos 20 caracteres para detectar el tipo de texto.');
+      return;
+    }
+    setDetectingGenre(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/detect-genre', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: t }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'No se pudo detectar el tipo de documento.');
+        return;
+      }
+      const matched = findGenreById(data.genreId);
+      if (matched) {
+        setSelectedGenre(matched);
+        setDetectionResult({
+          genreName: matched.name,
+          confidence: data.confidence,
+          reason: data.reason,
+        });
+        if (!studentText.trim()) {
+          setStudentText(t);
+        }
+      }
+    } catch {
+      setError('Error de conexión al detectar el tipo de texto.');
+    } finally {
+      setDetectingGenre(false);
+    }
+  };
+
   // Run analysis
   const runAnalysis = async () => {
     if (!selectedGenre || !studentText.trim()) return;
 
     setCurrentStep('analyzing');
     setError(null);
+
+    const isCustomOrGeneric = selectedGenre.id === 'generico' || selectedGenre.id === 'otro';
 
     try {
       const res = await fetch('/api/analyze', {
@@ -110,8 +158,8 @@ export default function AcademicoPage() {
         body: JSON.stringify({
           reviewType: 'academic',
           genre: selectedGenre.id,
-          customGenreName: selectedGenre.id === 'otro' ? customGenreName : null,
-          customGenreDescription: selectedGenre.id === 'otro' ? customGenreDesc : null,
+          customGenreName: isCustomOrGeneric ? customGenreName : null,
+          customGenreDescription: isCustomOrGeneric ? customGenreDesc : null,
           dimensions,
           studentText,
           referenceText: referenceText.trim() || null,
@@ -243,12 +291,55 @@ export default function AcademicoPage() {
                 corresponda a tu documento para una evaluación más precisa.
               </p>
 
+              {/* Auto-detect card */}
+              <div className="glass-card glass-card--compact mb-6 animate-fade-in" style={{ border: '1px dashed var(--color-border-hover, #444)' }}>
+                <h3 className="heading-4 mb-1" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>✨</span> ¿No estás seguro del tipo de documento?
+                </h3>
+                <p className="text-small mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+                  Pega un fragmento de tu texto (o el título y resumen) y la IA detectará a cuál de los 7 tipos académicos corresponde.
+                </p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Pega un fragmento o las primeras líneas de tu texto…"
+                    value={detectionSample}
+                    onChange={(e) => setDetectionSample(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleDetectGenre(detectionSample);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={() => handleDetectGenre(detectionSample)}
+                    disabled={detectingGenre || detectionSample.trim().length < 20}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    {detectingGenre ? 'Detectando…' : 'Detectar tipo'}
+                  </button>
+                </div>
+                {detectionResult && (
+                  <div className="notice notice--info mt-3 animate-fade-in">
+                    <span className="notice__icon">✨</span>
+                    <div>
+                      <strong>Detectado: {detectionResult.genreName}</strong> ({detectionResult.confidence === 'high' ? 'Confianza alta' : 'Confianza media'})
+                      <p className="text-small mt-1">{detectionResult.reason}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="genre-grid">
                 {ACADEMIC_GENRES.map((genre) => (
                   <div
                     key={genre.id}
                     className={`genre-card ${selectedGenre?.id === genre.id ? 'genre-card--selected' : ''}`}
-                    onClick={() => setSelectedGenre(genre)}
+                    onClick={() => {
+                      setSelectedGenre(genre);
+                      setDetectionResult(null);
+                    }}
                     id={`genre-${genre.id}`}
                   >
                     <span className="genre-card__icon">{genre.icon}</span>
@@ -260,12 +351,12 @@ export default function AcademicoPage() {
                 ))}
               </div>
 
-              {/* Custom genre inputs */}
-              {selectedGenre?.id === 'otro' && (
+              {/* Custom / generic genre inputs */}
+              {(selectedGenre?.id === 'generico' || selectedGenre?.id === 'otro') && (
                 <div className="glass-card glass-card--compact mt-6 animate-fade-in">
                   <div className="form-group mb-4">
                     <label className="form-label" htmlFor="custom-genre-name">
-                      Nombre del género académico
+                      Nombre o especificación del texto (opcional)
                     </label>
                     <input
                       id="custom-genre-name"
@@ -273,27 +364,27 @@ export default function AcademicoPage() {
                       type="text"
                       value={customGenreName}
                       onChange={(e) => setCustomGenreName(e.target.value)}
-                      placeholder="Ej: Carta de motivación, Análisis de caso…"
+                      placeholder="Ej: Análisis de caso, Comentario de texto, Carta reflexiva…"
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label" htmlFor="custom-genre-desc">
-                      Describe sus características principales (opcional)
+                      Describe sus características o requisitos particulares (opcional)
                     </label>
                     <textarea
                       id="custom-genre-desc"
                       className="form-textarea"
                       value={customGenreDesc}
                       onChange={(e) => setCustomGenreDesc(e.target.value)}
-                      placeholder="Describe la estructura esperada, los requisitos del docente o las características del texto…"
-                      style={{ minHeight: '120px' }}
+                      placeholder="Describe la estructura esperada, rúbrica o criterios solicitados por tu profesor…"
+                      style={{ minHeight: '100px' }}
                     />
                   </div>
                 </div>
               )}
 
               {/* Selected genre info */}
-              {selectedGenre && selectedGenre.id !== 'otro' && (
+              {selectedGenre && selectedGenre.id !== 'generico' && selectedGenre.id !== 'otro' && (
                 <div className="glass-card glass-card--compact mt-6 animate-fade-in">
                   <h3 className="heading-4 mb-2">
                     {selectedGenre.icon} {selectedGenre.name}
@@ -326,10 +417,7 @@ export default function AcademicoPage() {
                 <Link href="/" className="btn btn--ghost">← Inicio</Link>
                 <button
                   className="btn btn--primary btn--lg"
-                  disabled={
-                    !selectedGenre ||
-                    (selectedGenre.id === 'otro' && !customGenreName.trim())
-                  }
+                  disabled={!selectedGenre}
                   onClick={() => setCurrentStep('config')}
                   id="btn-next-config"
                 >

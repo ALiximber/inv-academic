@@ -15,19 +15,38 @@ export function buildAcademicPrompt(params: {
 }): string {
   const { genre, customGenreName, customGenreDescription, dimensions, studentText, referenceText } = params;
 
-  const genreName = genre.id === 'otro' && customGenreName ? customGenreName : genre.name;
-  const genreDesc = genre.id === 'otro' && customGenreDescription ? customGenreDescription : genre.description;
+  const isCustomOrGeneric = genre.id === 'generico' || genre.id === 'otro';
+  const genreName = isCustomOrGeneric && customGenreName ? customGenreName : genre.name;
+  const genreDesc = isCustomOrGeneric && customGenreDescription ? customGenreDescription : genre.description;
 
   let prompt = `TAREA: Revisa el siguiente texto académico de tipo "${genreName}".
 
 DESCRIPCIÓN DEL GÉNERO: ${genreDesc}
 `;
 
-  // Structure components
-  if (genre.structureComponents.length > 0) {
+  // Structure components (sections + internal parts)
+  if (genre.structure.length > 0) {
+    const multi = genre.structure.length > 1;
+    const renderVariant = (v: AcademicGenre['structure'][number]) =>
+      v.sections
+        .map((s, i) => {
+          const flags = [s.optional ? 'opcional' : null, s.note || null].filter(Boolean).join('; ');
+          const head = `${i + 1}. ${s.name}${flags ? ` (${flags})` : ''}`;
+          const parts = s.parts?.length ? `\n${s.parts.map((p) => `   - ${p}`).join('\n')}` : '';
+          return head + parts;
+        })
+        .join('\n');
+
     prompt += `
-COMPONENTES ESTRUCTURALES ESPERADOS PARA ESTE GÉNERO:
-${genre.structureComponents.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+COMPONENTES ESTRUCTURALES ESPERADOS PARA ESTE GÉNERO (cada sección con sus partes internas):
+${genre.structure
+  .map((v) => (multi ? `MODALIDAD "${v.label}":\n${renderVariant(v)}` : renderVariant(v)))
+  .join('\n\n')}
+
+INSTRUCCIONES PARA LA EVALUACIÓN ESTRUCTURAL:
+- Genera un componente en "structureComponents" por cada SECCIÓN (usa exactamente el nombre indicado).
+- Si la sección tiene partes internas, incluye el arreglo "parts" con el estado de cada una ("present", "weak" o "missing"), usando exactamente los nombres indicados.
+- Las secciones marcadas como opcionales o condicionales que no apliquen deben tener status "not_applicable".${multi ? '\n- Este género tiene varias modalidades: identifica cuál corresponde al texto, evalúa SOLO esa modalidad y menciona cuál elegiste en "structureSummary".' : ''}
 `;
   }
 
@@ -46,14 +65,14 @@ NOTA IMPORTANTE: ${genre.notes}
 `;
   }
 
-  // Custom genre handling
-  if (genre.id === 'otro') {
+  // Custom or generic genre handling
+  if (isCustomOrGeneric) {
     prompt += `
-INSTRUCCIONES PARA GÉNERO PERSONALIZADO:
-- El usuario ha indicado un tipo de texto no estándar. Aplica criterios generales razonables.
-- Evalúa la coherencia, claridad, gramática y organización del texto.
-- Si el usuario describió características específicas, úsalas como guía.
-- Advierte al usuario cuando necesites una plantilla, rúbrica o norma institucional para evaluar requisitos específicos.
+INSTRUCCIONES PARA TEXTO GENÉRICO / GÉNERO PERSONALIZADO:
+- El usuario ha seleccionado un texto de tipo genérico o no estándar.
+- Aplica criterios generales y equilibrados de calidad de redacción (coherencia, cohesión, claridad expositiva, solidez de ideas y corrección gramatical/ortográfica).
+- Evalúa los componentes básicos (introducción o inicio, desarrollo o cuerpo, y conclusión o cierre).
+- Si el usuario describió características o requisitos específicos, úsalos como guía prioritaria.
 `;
   }
 

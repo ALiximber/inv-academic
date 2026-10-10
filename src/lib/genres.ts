@@ -1,306 +1,347 @@
-import { AcademicGenre, ReviewDimension, BriefIntention } from './types';
+import { AcademicGenre, ReviewDimension, BriefIntention, StructureSection, StructureVariant } from './types';
 
 /* ==========================================================
    Academic Genres — Each has specific structure + criteria
    ========================================================== */
 
-export const ACADEMIC_GENRES: AcademicGenre[] = [
+/** Envuelve una lista de secciones en una única modalidad de estructura. */
+const single = (sections: StructureSection[]): StructureVariant[] => [
+  { id: 'main', label: 'Estructura', sections },
+];
+
+const RAW_GENRES: Array<Omit<AcademicGenre, 'structureComponents'>> = [
   {
     id: 'ensayo',
-    name: 'Ensayo académico',
-    icon: '📝',
-    description: 'Texto argumentativo que presenta y defiende una postura sobre un tema específico.',
-    structureComponents: [
-      'Introducción y presentación del tema',
-      'Planteamiento de tesis o idea central',
-      'Desarrollo argumentativo',
-      'Organización de los párrafos',
-      'Uso de evidencias y fuentes',
-      'Coherencia entre los argumentos',
-      'Conclusión',
-      'Registro académico',
-    ],
+    name: 'Ensayo',
+    icon: '',
+    description: 'Texto argumentativo que presenta, sustenta y defiende una tesis o postura crítica sobre un tema específico.',
+    structure: single([
+      {
+        name: 'Introducción',
+        parts: [
+          'Exordio o motivación',
+          'Contextualización y delimitación temática',
+          'Problemática',
+          'Tesis',
+          'Objetivo y organización del texto',
+        ],
+      },
+      {
+        name: 'Cuerpo o desarrollo',
+        parts: [
+          'Argumentación (pretensión, respaldo y garantía)',
+          'Contraste teórico y contraargumentación',
+        ],
+      },
+      {
+        name: 'Conclusión',
+        parts: ['Síntesis de argumentos', 'Proyecciones', 'Peroración'],
+      },
+      { name: 'Referencias bibliográficas' },
+    ]),
     evaluationCriteria: [
-      { name: 'Tesis clara', description: 'La postura central debe estar formulada de manera explícita y defendible.' },
-      { name: 'Argumentación sólida', description: 'Los argumentos deben estar justificados con evidencias, razonamientos o fuentes.' },
-      { name: 'Coherencia interna', description: 'Los párrafos deben estar conectados lógicamente y contribuir a la defensa de la tesis.' },
-      { name: 'Conclusión articulada', description: 'La conclusión debe sintetizar la postura defendida sin introducir ideas nuevas sin desarrollo.' },
+      { name: 'Tesis clara', description: 'La postura central debe estar formulada de manera explícita, debatible y defendible.' },
+      { name: 'Argumentación sólida', description: 'Los argumentos deben estar justificados con evidencias, razonamientos o fuentes confiables.' },
+      { name: 'Coherencia interna', description: 'Los párrafos deben estar conectados lógicamente y orientados a sustentar la tesis.' },
+      { name: 'Conclusión articulada', description: 'La conclusión debe sintetizar las ideas clave sin introducir elementos inconexos sin desarrollo.' },
     ],
     notes: null,
   },
   {
-    id: 'articulo_cientifico',
-    name: 'Artículo científico',
-    icon: '🔬',
-    description: 'Publicación que comunica resultados de una investigación original siguiendo un formato estandarizado.',
-    structureComponents: [
-      'Título',
-      'Resumen (Abstract)',
-      'Palabras clave',
-      'Introducción',
-      'Metodología',
-      'Resultados',
-      'Discusión',
-      'Conclusiones',
-      'Referencias bibliográficas',
-    ],
+    id: 'tesis',
+    name: 'Tesis',
+    icon: '',
+    description: 'Investigación académica extensa y rigurosa que demuestra dominio conceptual, metodológico y capacidad analítica.',
+    structure: single([
+      {
+        name: 'Secciones preliminares',
+        parts: [
+          'Portada',
+          'Dedicatoria / agradecimientos',
+          'Índice general',
+          'Resumen (abstract)',
+          'Palabras clave',
+        ],
+      },
+      {
+        name: 'Introducción',
+        parts: [
+          'Contextualización',
+          'Justificación',
+          'Estado del arte',
+          'Vacíos de investigación',
+          'Aportes',
+        ],
+      },
+      {
+        name: 'Marco teórico referencial',
+        parts: [
+          'Antecedentes',
+          'Marco conceptual',
+          'Fundamentos normativos / históricos',
+        ],
+      },
+      {
+        name: 'Objetivos e hipótesis',
+        parts: ['Objetivo general', 'Objetivos específicos', 'Hipótesis'],
+      },
+      {
+        name: 'Marco metodológico',
+        parts: [
+          'Diseño de estudio',
+          'Población y muestra',
+          'Instrumentos / materiales',
+          'Procedimiento',
+          'Estrategia analítica',
+        ],
+      },
+      { name: 'Resultados' },
+      { name: 'Discusión' },
+      {
+        name: 'Propuesta de transformación',
+        optional: true,
+        note: 'En tesis aplicadas o de posgrado',
+      },
+      {
+        name: 'Conclusiones y recomendaciones',
+        parts: ['Conclusiones', 'Recomendaciones'],
+      },
+      {
+        name: 'Referencias bibliográficas y anexos',
+        parts: ['Referencias bibliográficas', 'Anexos'],
+      },
+    ]),
     evaluationCriteria: [
-      { name: 'Estructura IMRyD', description: 'El artículo sigue la estructura Introducción-Metodología-Resultados-Discusión, aunque puede variar según la disciplina.' },
-      { name: 'Objetividad', description: 'El lenguaje debe ser impersonal y basado en datos.' },
-      { name: 'Reproducibilidad', description: 'La metodología debe ser lo suficientemente detallada para permitir la replicación.' },
-      { name: 'Coherencia con resultados', description: 'Las conclusiones deben derivarse lógicamente de los resultados presentados.' },
+      { name: 'Rigor metodológico', description: 'Diseño investigativo coherente, sistemático y congruente con los objetivos planteados.' },
+      { name: 'Coherencia integral', description: 'Conexión lógica entre problema, marco teórico, metodología y resultados.' },
+      { name: 'Aporte y originalidad', description: 'Fundamentación clara de la relevancia y aportación al campo disciplinar.' },
+      { name: 'Fundamentación bibliográfica', description: 'Uso exhaustivo, pertinente y actualizado de fuentes académicas.' },
     ],
-    notes: 'No todos los artículos científicos siguen exactamente la misma estructura. Existen variaciones según la disciplina, la revista y el formato editorial.',
-  },
-  {
-    id: 'informe_tecnico',
-    name: 'Informe técnico',
-    icon: '📊',
-    description: 'Documento que presenta el análisis técnico de un problema, procedimiento o situación.',
-    structureComponents: [
-      'Identificación del problema u objetivo',
-      'Descripción del procedimiento o metodología',
-      'Presentación de resultados o hallazgos',
-      'Análisis e interpretación',
-      'Conclusiones',
-      'Recomendaciones',
-      'Organización de apartados',
-    ],
-    evaluationCriteria: [
-      { name: 'Claridad técnica', description: 'La información técnica debe presentarse de forma precisa y comprensible.' },
-      { name: 'Estructura lógica', description: 'Los apartados deben seguir un orden coherente del problema a la solución.' },
-      { name: 'Datos verificables', description: 'Los resultados deben estar respaldados por datos concretos.' },
-    ],
-    notes: null,
-  },
-  {
-    id: 'reporte_investigacion',
-    name: 'Reporte de investigación',
-    icon: '🔍',
-    description: 'Documento que describe el proceso y los resultados de un estudio o investigación.',
-    structureComponents: [
-      'Planteamiento del problema',
-      'Objetivos de investigación',
-      'Marco teórico o antecedentes',
-      'Metodología',
-      'Resultados',
-      'Análisis y discusión',
-      'Conclusiones',
-      'Referencias',
-    ],
-    evaluationCriteria: [
-      { name: 'Coherencia metodológica', description: 'Los métodos deben ser congruentes con los objetivos planteados.' },
-      { name: 'Fundamentación', description: 'El marco teórico debe sustentar la investigación realizada.' },
-      { name: 'Objetividad', description: 'Los resultados deben presentarse sin sesgos interpretativos indebidos.' },
-    ],
-    notes: null,
-  },
-  {
-    id: 'resumen_academico',
-    name: 'Resumen académico',
-    icon: '📋',
-    description: 'Texto breve que condensa las ideas principales de un documento más extenso.',
-    structureComponents: [
-      'Identificación del texto fuente',
-      'Idea principal del texto',
-      'Ideas secundarias relevantes',
-      'Fidelidad al contenido original',
-      'Brevedad y concisión',
-    ],
-    evaluationCriteria: [
-      { name: 'Fidelidad', description: 'El resumen debe representar con precisión las ideas del texto original.' },
-      { name: 'Selección de ideas', description: 'Debe distinguir ideas principales de secundarias e incluir las esenciales.' },
-      { name: 'Concisión', description: 'Debe ser significativamente más breve que el texto original sin perder información clave.' },
-      { name: 'No interpretación', description: 'No debe incluir opiniones o interpretaciones propias del redactor.' },
-    ],
-    notes: null,
-  },
-  {
-    id: 'sintesis',
-    name: 'Síntesis',
-    icon: '🔗',
-    description: 'Texto que integra ideas de varias fuentes para construir una visión global.',
-    structureComponents: [
-      'Identificación de fuentes',
-      'Ideas principales integradas',
-      'Relaciones entre fuentes',
-      'Visión global coherente',
-      'Voz propia del autor',
-    ],
-    evaluationCriteria: [
-      { name: 'Integración de fuentes', description: 'Las ideas de las distintas fuentes deben estar articuladas, no simplemente yuxtapuestas.' },
-      { name: 'Aporte propio', description: 'La síntesis debe ofrecer una perspectiva integradora, no solo un resumen combinado.' },
-      { name: 'Coherencia global', description: 'El texto debe leerse como un todo articulado.' },
-    ],
-    notes: null,
-  },
-  {
-    id: 'resena_critica',
-    name: 'Reseña crítica',
-    icon: '⚖️',
-    description: 'Texto que describe y evalúa críticamente una obra, artículo o documento.',
-    structureComponents: [
-      'Datos de la obra reseñada',
-      'Descripción del contenido',
-      'Análisis crítico',
-      'Valoración fundamentada',
-      'Postura del reseñador',
-      'Conclusión',
-    ],
-    evaluationCriteria: [
-      { name: 'Descripción fiel', description: 'El contenido de la obra debe describirse con precisión antes de ser evaluado.' },
-      { name: 'Argumentación crítica', description: 'Las valoraciones deben estar sustentadas con argumentos, no ser opiniones sin fundamento.' },
-      { name: 'Equilibrio', description: 'Debe reconocer tanto fortalezas como debilidades de la obra, cuando las haya.' },
-    ],
-    notes: null,
+    notes: 'Las tesis varían según la institución educativa, nivel académico (licenciatura, maestría, doctorado) y disciplina.',
   },
   {
     id: 'monografia',
     name: 'Monografía',
-    icon: '📚',
-    description: 'Estudio detallado y exhaustivo sobre un tema específico, basado en fuentes documentales.',
-    structureComponents: [
-      'Introducción y delimitación del tema',
-      'Justificación',
-      'Objetivos',
-      'Desarrollo temático',
-      'Marco conceptual',
-      'Conclusiones',
-      'Bibliografía',
+    icon: '',
+    description: 'Estudio documental profundo y delimitado sobre un tema específico con base en fuentes bibliográficas.',
+    structure: single([
+      {
+        name: 'Secciones preliminares',
+        parts: ['Portada', 'Índice'],
+      },
+      {
+        name: 'Introducción',
+        parts: [
+          'Presentación y delimitación del tema',
+          'Pertinencia / justificación',
+          'Metodología documental',
+          'Orden de los apartados',
+        ],
+      },
+      {
+        name: 'Desarrollo',
+        note: 'Núcleo expositivo organizado en subtemas mediante subtítulos',
+      },
+      {
+        name: 'Conclusión',
+        parts: [
+          'Síntesis del recorrido',
+          'Deducciones principales',
+          'Postura del autor',
+          'Proyecciones',
+        ],
+      },
+      { name: 'Referencias bibliográficas' },
+      { name: 'Anexos' },
+    ]),
+    evaluationCriteria: [
+      { name: 'Profundidad temática', description: 'Tratamiento exhaustivo y focalizado del tema seleccionado.' },
+      { name: 'Fundamentación documental', description: 'Afirmaciones respaldadas de forma rigurosa en literatura académica pertinente.' },
+      { name: 'Organización temática', description: 'Progresión temática lógica y fluida a lo largo de las secciones.' },
+    ],
+    notes: null,
+  },
+  {
+    id: 'resena',
+    name: 'Reseña',
+    icon: '',
+    description: 'Texto que resume, analiza y valora críticamente una obra, libro, artículo o documento académico.',
+    structure: single([
+      {
+        name: 'Ficha técnica e introducción',
+        parts: ['Datos de la obra', 'Línea temática'],
+      },
+      { name: 'Resumen expositivo o sinopsis' },
+      {
+        name: 'Análisis del contenido',
+        parts: ['Aciertos', 'Desaciertos', 'Aportes'],
+      },
+      {
+        name: 'Conclusión y ponderación',
+        parts: ['Balance global', 'Recomendación al lector'],
+      },
+    ]),
+    evaluationCriteria: [
+      { name: 'Fidelidad descriptiva', description: 'Representación fiel y contextualizada de las ideas de la obra reseñada antes de su valoración.' },
+      { name: 'Fundamentación crítica', description: 'Valoraciones sustentadas en argumentos y criterios objetivos, evitando juicios arbitrarios.' },
+      { name: 'Equilibrio y ponderación', description: 'Reconocimiento fundamentado tanto de aciertos como de limitaciones de la obra.' },
+    ],
+    notes: null,
+  },
+  {
+    id: 'informe',
+    name: 'Informe',
+    icon: '',
+    description: 'Documento que expone de forma clara y estructurada los resultados, procedimientos o diagnóstico de un trabajo, práctica o proyecto.',
+    structure: [
+      {
+        id: 'aula',
+        label: 'Informe académico (aula)',
+        sections: [
+          { name: 'Título' },
+          { name: 'Índice' },
+          { name: 'Introducción' },
+          { name: 'Desarrollo o cuerpo' },
+          { name: 'Conclusiones' },
+          { name: 'Bibliografía' },
+        ],
+      },
+      {
+        id: 'investigacion',
+        label: 'Reporte científico (investigación)',
+        sections: [
+          {
+            name: 'Título y resumen',
+            parts: ['Título', 'Resumen (abstract)', 'Palabras clave'],
+          },
+          {
+            name: 'Introducción',
+            parts: ['Problema', 'Antecedentes', 'Objetivos / hipótesis'],
+          },
+          {
+            name: 'Método',
+            parts: [
+              'Diseño',
+              'Muestra / participantes',
+              'Instrumentos',
+              'Procedimiento',
+              'Análisis',
+            ],
+          },
+          { name: 'Resultados' },
+          { name: 'Discusión' },
+          {
+            name: 'Bibliografía y anexos',
+            parts: ['Bibliografía', 'Anexos'],
+          },
+        ],
+      },
     ],
     evaluationCriteria: [
-      { name: 'Profundidad', description: 'El tema debe tratarse con suficiente detalle y exhaustividad.' },
-      { name: 'Fundamentación documental', description: 'Las afirmaciones deben estar respaldadas por fuentes bibliográficas.' },
-      { name: 'Organización temática', description: 'Los apartados deben seguir un desarrollo lógico del tema.' },
+      { name: 'Claridad y precisión técnica', description: 'Información directa, precisa y sin ambigüedades.' },
+      { name: 'Estructura lógica', description: 'Desarrollo ordenado desde los antecedentes hasta los resultados y conclusiones.' },
+      { name: 'Datos y evidencias verificables', description: 'Resultados fundamentados en registros, mediciones o evidencias concretas.' },
     ],
     notes: null,
   },
   {
     id: 'protocolo_investigacion',
     name: 'Protocolo de investigación',
-    icon: '📐',
-    description: 'Documento que planifica y describe cómo se llevará a cabo una investigación.',
-    structureComponents: [
-      'Título del proyecto',
-      'Planteamiento del problema',
-      'Pregunta de investigación',
-      'Objetivos',
-      'Justificación',
-      'Marco teórico',
-      'Hipótesis (si aplica)',
-      'Metodología propuesta',
-      'Cronograma',
-      'Referencias',
-    ],
+    icon: '',
+    description: 'Documento de planeación que formula el problema, justificación, diseño teórico y metodológico de una investigación futura.',
+    structure: single([
+      { name: 'Introducción' },
+      { name: 'Justificación' },
+      { name: 'Marco teórico' },
+      {
+        name: 'Planteamiento del problema',
+        parts: ['Pregunta de investigación'],
+      },
+      { name: 'Hipótesis' },
+      {
+        name: 'Objetivos',
+        parts: ['Objetivo general', 'Objetivos específicos'],
+      },
+      {
+        name: 'Material y métodos',
+        parts: [
+          'Tipo de estudio',
+          'Universo / población y muestra (inclusión, exclusión, eliminación y muestreo)',
+          'Variables (definición y operacionalización)',
+          'Técnica (procedimiento, estandarización / calibración y validación)',
+          'Diseño estadístico',
+        ],
+      },
+      {
+        name: 'Recursos',
+        parts: ['Humanos', 'Materiales', 'Financiamiento'],
+      },
+      { name: 'Cronograma de actividades' },
+      {
+        name: 'Aspectos éticos y legales',
+        parts: ['Comité de ética', 'Consentimiento informado'],
+      },
+      { name: 'Referencias' },
+      { name: 'Anexos' },
+    ]),
     evaluationCriteria: [
-      { name: 'Viabilidad', description: 'La metodología propuesta debe ser realizable con los recursos disponibles.' },
-      { name: 'Coherencia interna', description: 'Debe haber congruencia entre problema, objetivos, hipótesis y metodología.' },
-      { name: 'Claridad del diseño', description: 'El plan de trabajo debe ser comprensible y seguible.' },
+      { name: 'Coherencia interna', description: 'Congruencia estricta entre problema, objetivos, hipótesis y metodología propuesta.' },
+      { name: 'Viabilidad y pertinencia', description: 'Factibilidad real de la investigación en tiempo, recursos y método.' },
+      { name: 'Claridad del diseño metodológico', description: 'Detalle suficiente para comprender y replicar los procedimientos proyectados.' },
     ],
     notes: null,
   },
   {
-    id: 'marco_teorico',
-    name: 'Marco teórico',
-    icon: '🏗️',
-    description: 'Sección que establece los fundamentos conceptuales y teóricos de una investigación.',
-    structureComponents: [
-      'Antecedentes de investigación',
-      'Bases teóricas',
-      'Definición de conceptos clave',
-      'Relación entre conceptos',
-      'Fundamentación bibliográfica',
-    ],
+    id: 'generico',
+    name: 'Texto genérico',
+    icon: '',
+    description: 'Escrito o trabajo general sin una estructura académica rígida. Se revisa redacción, coherencia, claridad, argumentación y ortografía.',
+    structure: single([
+      { name: 'Introducción o planteamiento inicial' },
+      { name: 'Desarrollo y progresión de ideas' },
+      { name: 'Cierre, conclusión o síntesis' },
+    ]),
     evaluationCriteria: [
-      { name: 'Pertinencia', description: 'Las teorías y conceptos incluidos deben ser relevantes para la investigación.' },
-      { name: 'Articulación', description: 'Los conceptos deben estar conectados entre sí y con el problema de investigación.' },
-      { name: 'Actualización', description: 'Las fuentes deben ser relevantes y, cuando sea posible, actualizadas.' },
+      { name: 'Claridad y fluidez', description: 'Expresión precisa de las ideas, libre de ambigüedades y con registro adecuado.' },
+      { name: 'Coherencia y cohesión', description: 'Conexión lógica entre oraciones y párrafos con uso adecuado de conectores.' },
+      { name: 'Corrección lingüística', description: 'Cumplimiento riguroso de las normas ortográficas, sintácticas y gramaticales.' },
     ],
-    notes: null,
-  },
-  {
-    id: 'estado_del_arte',
-    name: 'Estado del arte',
-    icon: '🗺️',
-    description: 'Revisión exhaustiva de la literatura existente sobre un tema de investigación.',
-    structureComponents: [
-      'Delimitación del tema',
-      'Criterios de búsqueda',
-      'Revisión de fuentes',
-      'Tendencias identificadas',
-      'Vacíos en la investigación',
-      'Síntesis interpretativa',
-    ],
-    evaluationCriteria: [
-      { name: 'Exhaustividad', description: 'La revisión debe cubrir las fuentes más relevantes del tema.' },
-      { name: 'Organización', description: 'Las fuentes deben estar organizadas temática o cronológicamente.' },
-      { name: 'Análisis de tendencias', description: 'Debe identificar patrones, coincidencias y discrepancias entre los estudios.' },
-    ],
-    notes: null,
-  },
-  {
-    id: 'reporte_practicas',
-    name: 'Reporte de prácticas o laboratorio',
-    icon: '🧪',
-    description: 'Documento que registra los procedimientos, resultados y observaciones de una práctica experimental.',
-    structureComponents: [
-      'Título de la práctica',
-      'Objetivo',
-      'Marco teórico breve',
-      'Materiales y equipo',
-      'Procedimiento',
-      'Resultados y datos',
-      'Análisis de resultados',
-      'Conclusiones',
-      'Cuestionario (si aplica)',
-    ],
-    evaluationCriteria: [
-      { name: 'Precisión', description: 'Los datos y procedimientos deben registrarse con exactitud.' },
-      { name: 'Coherencia datos-conclusiones', description: 'Las conclusiones deben derivarse de los resultados obtenidos.' },
-      { name: 'Claridad procedimental', description: 'El procedimiento debe ser reproducible a partir de la descripción.' },
-    ],
-    notes: null,
-  },
-  {
-    id: 'tesis',
-    name: 'Tesis o proyecto de investigación',
-    icon: '🎓',
-    description: 'Trabajo extenso de investigación que demuestra el dominio de un tema y la capacidad investigativa del autor.',
-    structureComponents: [
-      'Portada',
-      'Índice',
-      'Resumen',
-      'Introducción',
-      'Planteamiento del problema',
-      'Justificación',
-      'Objetivos',
-      'Marco teórico',
-      'Marco metodológico',
-      'Resultados',
-      'Discusión',
-      'Conclusiones',
-      'Recomendaciones',
-      'Referencias bibliográficas',
-      'Anexos',
-    ],
-    evaluationCriteria: [
-      { name: 'Coherencia integral', description: 'Todos los capítulos deben estar articulados entre sí.' },
-      { name: 'Rigor metodológico', description: 'La investigación debe seguir un método sistemático y justificado.' },
-      { name: 'Originalidad', description: 'Debe aportar conocimiento nuevo o una perspectiva original sobre el tema.' },
-      { name: 'Fundamentación extensa', description: 'Las afirmaciones deben estar ampliamente respaldadas por la literatura.' },
-    ],
-    notes: 'Las tesis varían significativamente según la institución, el nivel académico (licenciatura, maestría, doctorado) y la disciplina.',
-  },
-  {
-    id: 'otro',
-    name: 'Otro tipo de texto',
-    icon: '📄',
-    description: 'Especifica el género académico y sus características particulares para una evaluación personalizada.',
-    structureComponents: [],
-    evaluationCriteria: [],
-    notes: 'El usuario deberá describir el tipo de texto y sus requisitos específicos. El sistema aplicará criterios generales razonables basados en la descripción proporcionada.',
+    notes: 'Aplica criterios generales de calidad y redacción. Si deseas requisitos particulares o una rúbrica específica, puedes detallarlos.',
   },
 ];
+
+/** Aplana las secciones de todas las modalidades (sin duplicados). */
+function flattenSections(structure: StructureVariant[]): string[] {
+  const names: string[] = [];
+  for (const variant of structure) {
+    for (const section of variant.sections) {
+      if (!names.includes(section.name)) names.push(section.name);
+    }
+  }
+  return names;
+}
+
+export const ACADEMIC_GENRES: AcademicGenre[] = RAW_GENRES.map((g) => ({
+  ...g,
+  structureComponents: flattenSections(g.structure),
+}));
+
+/**
+ * Helper to find a genre by ID, supporting backwards-compatible aliases.
+ */
+export function findGenreById(id: string | null | undefined): AcademicGenre | undefined {
+  if (!id) return undefined;
+  if (id === 'otro' || id === 'personalizado') {
+    return ACADEMIC_GENRES.find((g) => g.id === 'generico');
+  }
+  if (id === 'informe_tecnico' || id === 'reporte_investigacion' || id === 'reporte_practicas') {
+    return ACADEMIC_GENRES.find((g) => g.id === 'informe');
+  }
+  if (id === 'resena_critica') {
+    return ACADEMIC_GENRES.find((g) => g.id === 'resena');
+  }
+  return ACADEMIC_GENRES.find((g) => g.id === id);
+}
 
 /* ==========================================================
    Review Dimensions (Academic Module)

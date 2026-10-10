@@ -50,8 +50,10 @@ Cada componente estructural debe seguir este esquema:
   "name": "<nombre del componente>",
   "status": "present" | "needs_review" | "not_found" | "not_applicable" | "needs_verification",
   "observation": "<explicación breve del estado>",
-  "recommendation": "<recomendación de mejora, o null>"
-}`;
+  "recommendation": "<recomendación de mejora, o null>",
+  "parts": [{ "name": "<nombre exacto de la parte interna>", "status": "present" | "weak" | "missing" }]
+}
+(omite "parts" o déjalo como [] cuando la sección no tenga partes internas definidas)`;
 
 export const FEEDBACK_SCHEMA = `
 La retroalimentación general debe seguir este esquema:

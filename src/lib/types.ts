@@ -65,11 +65,20 @@ export type StructureStatus =
   | 'not_applicable'
   | 'needs_verification';
 
+export type StructurePartStatus = 'present' | 'weak' | 'missing';
+
+export interface StructurePartResult {
+  name: string;
+  status: StructurePartStatus;
+}
+
 export interface StructureComponent {
   name: string;
   status: StructureStatus;
   observation: string;
   recommendation: string | null;
+  /** Evaluación opcional de las partes internas de la sección. */
+  parts?: StructurePartResult[];
 }
 
 /* ---- Feedback ---- */
@@ -103,11 +112,32 @@ export interface GenreCriteria {
   description: string;
 }
 
+/** Una sección formal del documento y, opcionalmente, sus partes internas. */
+export interface StructureSection {
+  name: string;
+  /** Partes o elementos internos de la sección (p. ej. Exordio, Tesis…). */
+  parts?: string[];
+  /** Sección que solo aplica en ciertos casos (p. ej. tesis aplicadas). */
+  optional?: boolean;
+  /** Aclaración breve (p. ej. "en tesis aplicadas o de posgrado"). */
+  note?: string;
+}
+
+/** Una modalidad de estructura (algunos géneros tienen más de una). */
+export interface StructureVariant {
+  id: string;
+  label: string;
+  sections: StructureSection[];
+}
+
 export interface AcademicGenre {
   id: string;
   name: string;
   icon: string;
   description: string;
+  /** Estructura canónica: una o varias modalidades con secciones y partes. */
+  structure: StructureVariant[];
+  /** Nombres planos de las secciones (derivado de `structure`). */
   structureComponents: string[];
   evaluationCriteria: GenreCriteria[];
   notes: string | null;

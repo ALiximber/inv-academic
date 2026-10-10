@@ -17,9 +17,10 @@ import {
   PRIORITY_LABELS,
   CONFIDENCE_LABELS,
   STATUS_LABELS,
-  STRUCTURE_STATUS_LABELS,
 } from '@/lib/types';
-import { ACADEMIC_GENRES, REVIEW_DIMENSIONS } from '@/lib/genres';
+import { ACADEMIC_GENRES, REVIEW_DIMENSIONS, findGenreById } from '@/lib/genres';
+import GenreStructureMap from '@/components/structure/GenreStructureMap';
+import StructureResults from '@/components/structure/StructureResults';
 
 export default function WorkspacePage() {
   // ── Text & file
@@ -32,6 +33,12 @@ export default function WorkspacePage() {
   const [selectedGenre, setSelectedGenre] = useState<AcademicGenre | null>(null);
   const [customGenreName, setCustomGenreName] = useState('');
   const [customGenreDesc, setCustomGenreDesc] = useState('');
+  const [detectingGenre, setDetectingGenre] = useState(false);
+  const [detectionResult, setDetectionResult] = useState<{
+    genreName: string;
+    confidence: string;
+    reason: string;
+  } | null>(null);
   const [dimensions, setDimensions] = useState<string[]>(
     REVIEW_DIMENSIONS.filter((d) => d.default).map((d) => d.id)
   );
@@ -107,6 +114,42 @@ export default function WorkspacePage() {
     });
   };
 
+  // ── Auto-detect genre
+  const handleDetectGenre = async () => {
+    if (!studentText.trim() || studentText.trim().length < 20) {
+      setError('Ingresa al menos 20 caracteres en el editor para detectar el tipo de texto.');
+      return;
+    }
+    setDetectingGenre(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/detect-genre', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: studentText }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'No se pudo detectar el tipo de texto.');
+        return;
+      }
+      const matched = findGenreById(data.genreId);
+      if (matched) {
+        setSelectedGenre(matched);
+        setDetectionResult({
+          genreName: matched.name,
+          confidence: data.confidence,
+          reason: data.reason,
+        });
+        setPanelTab('config');
+      }
+    } catch {
+      setError('Error de conexión al detectar el tipo de texto.');
+    } finally {
+      setDetectingGenre(false);
+    }
+  };
+
   // ── Run analysis
   const runAnalysis = async () => {
     if (!studentText.trim() || !selectedGenre) return;
@@ -115,6 +158,8 @@ export default function WorkspacePage() {
     setResult(null);
     setActiveObsId(null);
 
+    const isCustomOrGeneric = selectedGenre.id === 'generico' || selectedGenre.id === 'otro';
+
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -122,8 +167,8 @@ export default function WorkspacePage() {
         body: JSON.stringify({
           reviewType: 'academic',
           genre: selectedGenre.id,
-          customGenreName: selectedGenre.id === 'otro' ? customGenreName : null,
-          customGenreDescription: selectedGenre.id === 'otro' ? customGenreDesc : null,
+          customGenreName: isCustomOrGeneric ? customGenreName : null,
+          customGenreDescription: isCustomOrGeneric ? customGenreDesc : null,
           dimensions,
           studentText,
           referenceText: referenceText.trim() || null,
@@ -292,6 +337,17 @@ export default function WorkspacePage() {
               {selectedGenre ? `${selectedGenre.name}` : 'Documento sin tipo seleccionado'}
             </span>
             <span className="editor-pane__count">{studentText.length.toLocaleString()} caracteres</span>
+            {studentText.trim().length >= 20 && (
+              <button
+                type="button"
+                className="editor-pane__detect-btn"
+                onClick={handleDetectGenre}
+                disabled={detectingGenre}
+                title="Detectar automáticamente el tipo de documento"
+              >
+                {detectingGenre ? 'Detectando…' : '✨ Detectar tipo'}
+              </button>
+            )}
             <label className="editor-pane__file-btn" title="Cargar archivo DOCX, PDF o TXT">
               Cargar archivo
               <input
@@ -445,13 +501,44 @@ export default function WorkspacePage() {
 
               {/* Genre selector */}
               <section className="cfg-section">
-                <div className="cfg-section__label">Tipo de texto académico</div>
+                <div className="cfg-section__header">
+                  <div className="cfg-section__label">Tipo de texto académico</div>
+                  <button
+                    type="button"
+                    className="cfg-detect-btn"
+                    onClick={handleDetectGenre}
+                    disabled={detectingGenre || studentText.trim().length < 20}
+                    title={studentText.trim().length < 20 ? 'Escribe o carga texto para detectar el tipo' : 'Detectar tipo automáticamente'}
+                  >
+                    {detectingGenre ? 'Detectando…' : '✨ Detectar'}
+                  </button>
+                </div>
+
+                {detectionResult && (
+                  <div className="cfg-detected-notice animate-fade-in">
+                    <div className="cfg-detected-notice__header">
+                      <span>✨ <strong>{detectionResult.genreName}</strong> detectado</span>
+                      <button
+                        type="button"
+                        className="cfg-detected-notice__close"
+                        onClick={() => setDetectionResult(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="cfg-detected-notice__desc">{detectionResult.reason}</p>
+                  </div>
+                )}
+
                 <div className="genre-list">
                   {ACADEMIC_GENRES.map((g) => (
                     <button
                       key={g.id}
                       className={`genre-row ${selectedGenre?.id === g.id ? 'genre-row--active' : ''}`}
-                      onClick={() => setSelectedGenre(g)}
+                      onClick={() => {
+                        setSelectedGenre(g);
+                        setDetectionResult(null);
+                      }}
                       id={`genre-${g.id}`}
                     >
                       <span className="genre-row__icon">{g.icon}</span>
@@ -460,21 +547,28 @@ export default function WorkspacePage() {
                   ))}
                 </div>
 
-                {selectedGenre?.id === 'otro' && (
+                {selectedGenre && (
+                  <>
+                    <div className="cfg-subhead">Estructura esperada</div>
+                    <GenreStructureMap key={selectedGenre.id} genre={selectedGenre} />
+                  </>
+                )}
+
+                {(selectedGenre?.id === 'generico' || selectedGenre?.id === 'otro') && (
                   <div className="cfg-custom">
                     <input
                       className="cfg-input"
                       type="text"
                       value={customGenreName}
                       onChange={(e) => setCustomGenreName(e.target.value)}
-                      placeholder="Nombre del género…"
+                      placeholder="Nombre o tema específico (opcional)…"
                       id="custom-genre-name"
                     />
                     <textarea
                       className="cfg-input cfg-input--ta"
                       value={customGenreDesc}
                       onChange={(e) => setCustomGenreDesc(e.target.value)}
-                      placeholder="Características principales (opcional)…"
+                      placeholder="Características particulares o requisitos (opcional)…"
                     />
                   </div>
                 )}
@@ -797,23 +891,11 @@ export default function WorkspacePage() {
           {/* ── STRUCTURE tab ── */}
           {panelTab === 'structure' && result?.structureComponents && (
             <div className="side-panel__body">
-              <div className="struct-table">
-                {result.structureComponents.map((comp, i) => (
-                  <div key={i} className="struct-row">
-                    <div className="struct-row__name">{comp.name}</div>
-                    <span className={`struct-badge struct-badge--${comp.status === 'present' ? 'ok' :
-                      comp.status === 'needs_review' ? 'warn' :
-                        comp.status === 'not_found' ? 'missing' : 'na'
-                      }`}>
-                      {STRUCTURE_STATUS_LABELS[comp.status]}
-                    </span>
-                    <div className="struct-row__obs">{comp.observation}</div>
-                    {comp.recommendation && (
-                      <div className="struct-row__rec">{comp.recommendation}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <StructureResults
+                components={result.structureComponents}
+                genreName={result.genre}
+                summary={result.generalFeedback.structureSummary}
+              />
             </div>
           )}
         </aside>

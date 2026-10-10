@@ -6,7 +6,8 @@ Herramienta de revisión de textos académicos en español potenciada por IA. An
 
 ## Características
 
-- **Revisión académica por género**: ensayo, resumen, reseña, informe y más. También soporta géneros personalizados.
+- **Revisión académica por género**: ensayo, tesis, monografía, reseña, informe, protocolo de investigación y texto genérico.
+- **Detección automática de tipo**: identifica inteligentemente a cuál de los 7 tipos académicos corresponde el texto del estudiante.
 - **Dimensiones configurables**: el docente o estudiante elige qué aspectos revisar (gramática, coherencia, estructura, etc.).
 - **Resaltado interactivo**: los fragmentos con observaciones se marcan directamente en el texto; al hacer clic se muestra el detalle.
 - **Panel de observaciones**: filtra por categoría y prioridad, navega con teclado (← →) y marca cada observación como revisada, corregida o descartada.

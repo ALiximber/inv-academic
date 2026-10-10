@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { StructureComponent, StructurePartStatus, StructureStatus } from '@/lib/types';
 import { STRUCTURE_STATUS_LABELS } from '@/lib/types';
+import { SCORE_MAX, computeStructureScore, scoreLabel, scoreTone } from '@/lib/structure-score';
 
 type Tone = 'ok' | 'warn' | 'missing' | 'verify' | 'na';
 
@@ -85,19 +86,24 @@ interface StructureResultsProps {
   components: StructureComponent[];
   genreName?: string | null;
   summary?: string | null;
+  /** Nota general (0–10). Si no se entrega, se calcula a partir de las secciones. */
+  score?: number | null;
 }
+
+const fmt = (n: number | null | undefined) => (n === null || n === undefined ? '–' : n.toFixed(1));
 
 /**
  * Vista visual del resultado de la evaluación estructural:
- * resumen con barra segmentada + línea de tiempo de secciones con sus partes.
+ * calificación general, barra segmentada y línea de tiempo de secciones con sus partes calificadas.
  */
-export default function StructureResults({ components, genreName, summary }: StructureResultsProps) {
+export default function StructureResults({ components, genreName, summary, score }: StructureResultsProps) {
   // Las secciones que ya están bien cuentan como colapsadas por defecto.
   const [openMap, setOpenMap] = useState<Record<number, boolean>>({});
 
   const applicable = components.filter((c) => c.status !== 'not_applicable');
   const okCount = applicable.filter((c) => c.status === 'present').length;
-  const pct = applicable.length ? Math.round((okCount / applicable.length) * 100) : 0;
+  const overall = score ?? computeStructureScore(components);
+  const overallTone = scoreTone(overall);
 
   const counts = TONE_ORDER.map((tone) => ({
     tone,
@@ -111,15 +117,30 @@ export default function StructureResults({ components, genreName, summary }: Str
     <div className="sres" id="structure-results">
       {/* ── Summary ── */}
       <div className="sres__summary">
-        <div className="sres__score">
-          <span className="sres__score-num">{pct}</span>
-          <span className="sres__score-pct">%</span>
+        <div className={`sres__score sres__score--${overallTone}`}>
+          <span className="sres__score-num">{fmt(overall)}</span>
+          <span className="sres__score-max">/{SCORE_MAX}</span>
         </div>
         <div className="sres__summary-body">
           <div className="sres__summary-title">
-            {okCount} de {applicable.length} secciones adecuadas
+            Calificación de estructura · {scoreLabel(overall)}
           </div>
-          {genreName && <div className="sres__summary-sub">{genreName}</div>}
+          <div className="sres__summary-sub">
+            {okCount} de {applicable.length} secciones adecuadas{genreName ? ` · ${genreName}` : ''}
+          </div>
+          <div
+            className="sres__meter"
+            role="meter"
+            aria-valuemin={0}
+            aria-valuemax={SCORE_MAX}
+            aria-valuenow={overall ?? 0}
+            aria-label="Calificación general de la estructura"
+          >
+            <span
+              className={`sres__meter-fill sres__meter-fill--${overallTone}`}
+              style={{ width: `${((overall ?? 0) / SCORE_MAX) * 100}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -171,6 +192,15 @@ export default function StructureResults({ components, genreName, summary }: Str
                   disabled={!hasBody}
                 >
                   <span className="sres__name">{comp.name}</span>
+                  {comp.score !== null && comp.score !== undefined && (
+                    <span
+                      className={`sres__pts sres__pts--${scoreTone(comp.score)}`}
+                      title={`Calificación: ${fmt(comp.score)} de ${SCORE_MAX}`}
+                    >
+                      {fmt(comp.score)}
+                      <small>/{SCORE_MAX}</small>
+                    </span>
+                  )}
                   <span className={`sres__badge sres__badge--${tone}`}>
                     {STRUCTURE_STATUS_LABELS[comp.status]}
                   </span>
@@ -200,10 +230,11 @@ export default function StructureResults({ components, genreName, summary }: Str
                           <li
                             key={p.name}
                             className={`sres__part sres__part--${p.status}`}
-                            title={PART_LABELS[p.status]}
+                            title={`${PART_LABELS[p.status]} · ${fmt(p.score)}/${SCORE_MAX}`}
                           >
                             <PartIcon status={p.status} />
-                            <span>{p.name}</span>
+                            <span className="sres__part-name">{p.name}</span>
+                            <span className="sres__part-score">{fmt(p.score)}</span>
                           </li>
                         ))}
                       </ul>

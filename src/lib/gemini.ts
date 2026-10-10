@@ -5,6 +5,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_INSTRUCTIONS } from './prompts/shared';
 import { EvaluationResult, Observation } from './types';
+import { computeStructureScore, normalizeStructureComponents } from './structure-score';
 
 let ai: GoogleGenAI | null = null;
 
@@ -106,6 +107,8 @@ export async function analyzeText(prompt: string, studentText: string): Promise<
     })
   );
 
+  const structureComponents = normalizeStructureComponents(parsed.structureComponents);
+
   const result: EvaluationResult = {
     id: `eval-${Date.now()}`,
     timestamp: new Date().toISOString(),
@@ -113,7 +116,8 @@ export async function analyzeText(prompt: string, studentText: string): Promise<
     genre: null,
     dimensionsEvaluated: [],
     observations,
-    structureComponents: parsed.structureComponents || null,
+    structureComponents,
+    structureScore: computeStructureScore(structureComponents),
     generalFeedback: {
       overallAssessment: parsed.generalFeedback?.overallAssessment || 'No se generó valoración.',
       strengths: parsed.generalFeedback?.strengths || [],

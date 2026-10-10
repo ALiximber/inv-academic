@@ -894,6 +894,7 @@ export default function WorkspacePage() {
               <StructureResults
                 components={result.structureComponents}
                 genreName={result.genre}
+                score={result.structureScore}
                 summary={result.generalFeedback.structureSummary}
               />
             </div>

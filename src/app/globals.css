@@ -1275,7 +1275,53 @@ input, textarea { font-family: var(--font); }
   color: var(--hl-structure-solid);
 }
 .sres__score-num { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-.sres__score-pct { font-size: var(--text-sm); margin-left: 1px; opacity: 0.7; }
+.sres__score-max { font-size: var(--text-sm); margin-left: 2px; opacity: 0.6; font-weight: 500; }
+.sres__score--ok      { color: var(--ok); }
+.sres__score--good    { color: #86efac; }
+.sres__score--warn    { color: var(--warn); }
+.sres__score--missing { color: var(--danger); }
+.sres__score--na      { color: var(--text-tertiary); }
+.sres__summary-body { flex: 1; min-width: 0; }
+
+.sres__meter {
+  height: 4px;
+  margin-top: var(--sp-2);
+  background: var(--bg-3);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.sres__meter-fill { display: block; height: 100%; border-radius: 100px; transition: width 600ms cubic-bezier(.2,.8,.2,1); background: var(--tone); }
+.sres__meter-fill--ok      { --tone: var(--ok); }
+.sres__meter-fill--good    { --tone: #86efac; }
+.sres__meter-fill--warn    { --tone: var(--warn); }
+.sres__meter-fill--missing { --tone: var(--danger); }
+.sres__meter-fill--na      { --tone: var(--border-focus); }
+
+.sres__pts {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  white-space: nowrap;
+}
+.sres__pts small { font-size: 9.5px; font-weight: 400; opacity: 0.55; margin-left: 1px; }
+.sres__pts--ok      { color: var(--ok); }
+.sres__pts--good    { color: #86efac; }
+.sres__pts--warn    { color: var(--warn); }
+.sres__pts--missing { color: var(--danger); }
+.sres__pts--na      { color: var(--text-tertiary); }
+
+.sres__part-score {
+  margin-left: 2px;
+  padding-left: 6px;
+  border-left: 1px solid currentColor;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  opacity: 0.9;
+}
 .sres__summary-title { font-size: var(--text-sm); color: var(--text-primary); font-weight: 500; }
 .sres__summary-sub { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 1px; }
 
@@ -1394,7 +1440,8 @@ input, textarea { font-family: var(--font); }
 }
 .sres__part--present { color: var(--ok);     border-color: rgba(74,222,128,0.3);  background: rgba(74,222,128,0.07); }
 .sres__part--weak    { color: var(--warn);   border-color: rgba(245,158,11,0.3);  background: rgba(245,158,11,0.07); }
-.sres__part--missing { color: var(--danger); border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.07); text-decoration: line-through; text-decoration-color: rgba(248,113,113,0.5); }
+.sres__part--missing { color: var(--danger); border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.07); }
+.sres__part--missing .sres__part-name { text-decoration: line-through; text-decoration-color: rgba(248,113,113,0.5); }
 .sres__part svg { flex-shrink: 0; }
 
 .sres__obs { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.55; }

@@ -70,6 +70,8 @@ export type StructurePartStatus = 'present' | 'weak' | 'missing';
 export interface StructurePartResult {
   name: string;
   status: StructurePartStatus;
+  /** Calificación de 0 a 10 (un decimal). */
+  score: number;
 }
 
 export interface StructureComponent {
@@ -77,6 +79,8 @@ export interface StructureComponent {
   status: StructureStatus;
   observation: string;
   recommendation: string | null;
+  /** Calificación de 0 a 10 (un decimal); null si no aplica o no es verificable. */
+  score: number | null;
   /** Evaluación opcional de las partes internas de la sección. */
   parts?: StructurePartResult[];
 }
@@ -102,6 +106,8 @@ export interface EvaluationResult {
   dimensionsEvaluated: string[];
   observations: Observation[];
   structureComponents: StructureComponent[] | null;
+  /** Calificación general de la estructura (0–10), promedio de las secciones aplicables. */
+  structureScore?: number | null;
   generalFeedback: GeneralFeedback;
   warnings: string[];
 }

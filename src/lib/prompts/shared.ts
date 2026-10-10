@@ -51,9 +51,20 @@ Cada componente estructural debe seguir este esquema:
   "status": "present" | "needs_review" | "not_found" | "not_applicable" | "needs_verification",
   "observation": "<explicación breve del estado>",
   "recommendation": "<recomendación de mejora, o null>",
-  "parts": [{ "name": "<nombre exacto de la parte interna>", "status": "present" | "weak" | "missing" }]
+  "score": <número de 0 a 10 con un decimal, o null si la sección no aplica o no puede verificarse>,
+  "parts": [{ "name": "<nombre exacto de la parte interna>", "status": "present" | "weak" | "missing", "score": <número de 0 a 10 con un decimal> }]
 }
-(omite "parts" o déjalo como [] cuando la sección no tenga partes internas definidas)`;
+(omite "parts" o déjalo como [] cuando la sección no tenga partes internas definidas)
+
+RÚBRICA DE CALIFICACIÓN (0 a 10) para secciones y partes:
+- 9–10: presente, completa, bien desarrollada y adecuada al género.
+- 7–8.9: presente y funcional, con carencias menores.
+- 5–6.9: presente pero incompleta, superficial o poco clara.
+- 1–4.9: apenas esbozada o con problemas graves.
+- 0: ausente.
+- La nota de la sección debe ser coherente con la de sus partes (aprox. su promedio, ponderando las más importantes).
+- Usa null en "score" SOLO para secciones "not_applicable" o "needs_verification".
+- Califica con criterio y sé consistente; no infles las notas.`;
 
 export const FEEDBACK_SCHEMA = `
 La retroalimentación general debe seguir este esquema:

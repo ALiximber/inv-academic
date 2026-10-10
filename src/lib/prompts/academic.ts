@@ -45,7 +45,8 @@ ${genre.structure
 
 INSTRUCCIONES PARA LA EVALUACIÓN ESTRUCTURAL:
 - Genera un componente en "structureComponents" por cada SECCIÓN (usa exactamente el nombre indicado).
-- Si la sección tiene partes internas, incluye el arreglo "parts" con el estado de cada una ("present", "weak" o "missing"), usando exactamente los nombres indicados.
+- Si la sección tiene partes internas, incluye el arreglo "parts" con el estado ("present", "weak" o "missing") y la calificación "score" (0–10) de cada una, usando exactamente los nombres indicados.
+- Incluye siempre la calificación "score" (0–10) de cada sección, siguiendo la rúbrica del esquema.
 - Las secciones marcadas como opcionales o condicionales que no apliquen deben tener status "not_applicable".${multi ? '\n- Este género tiene varias modalidades: identifica cuál corresponde al texto, evalúa SOLO esa modalidad y menciona cuál elegiste en "structureSummary".' : ''}
 `;
   }

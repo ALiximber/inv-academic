@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BRIEF_INTENTIONS } from '@/lib/genres';
 import type { EvaluationResult, ExtractionResult } from '@/lib/types';
 import ResultsView from '@/components/results/ResultsView';
+import GeminiFallbackModal from '@/components/modals/GeminiFallbackModal';
 
 type Step = 'input' | 'analyzing' | 'results';
 
@@ -17,14 +18,29 @@ export default function BrevePage() {
   const [error, setError] = useState<string | null>(null);
   const [previousResults, setPreviousResults] = useState<EvaluationResult[]>([]);
 
+  // Gemini Fallback Modal
+  const [fallbackModal, setFallbackModal] = useState<{
+    file: File;
+    reason: string;
+  } | null>(null);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+
   const handleFileUpload = useCallback(async (file: File) => {
+    setError(null);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
       const res = await fetch('/api/extract', { method: 'POST', body: formData });
-      const data: ExtractionResult & { error?: string } = await res.json();
+      const data: ExtractionResult & { error?: string; canFallbackToGemini?: boolean } = await res.json();
       if (!res.ok) {
+        if (data.canFallbackToGemini) {
+          setFallbackModal({
+            file,
+            reason: data.error || 'No fue posible extraer texto digital de forma local.',
+          });
+          return;
+        }
         setError(data.error || 'Error al extraer el texto.');
         return;
       }
@@ -33,6 +49,34 @@ export default function BrevePage() {
       setError('Error de conexión al procesar el archivo.');
     }
   }, []);
+
+  const handleConfirmGeminiFallback = useCallback(async () => {
+    if (!fallbackModal) return;
+    setFallbackLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', fallbackModal.file);
+      formData.append('useGemini', 'true');
+
+      const res = await fetch('/api/extract', { method: 'POST', body: formData });
+      const data: ExtractionResult & { error?: string } = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Error al procesar el archivo con Gemini.');
+        setFallbackModal(null);
+        return;
+      }
+
+      setStudentText(data.text);
+      setFallbackModal(null);
+    } catch {
+      setError('Error de conexión al procesar el archivo con Gemini.');
+      setFallbackModal(null);
+    } finally {
+      setFallbackLoading(false);
+    }
+  }, [fallbackModal]);
 
   const runAnalysis = async () => {
     if (!studentText.trim()) return;
@@ -245,6 +289,16 @@ export default function BrevePage() {
           )}
         </div>
       </main>
+
+      <GeminiFallbackModal
+        isOpen={!!fallbackModal}
+        fileName={fallbackModal?.file.name || ''}
+        targetLabel="Texto breve"
+        reason={fallbackModal?.reason}
+        loading={fallbackLoading}
+        onConfirm={handleConfirmGeminiFallback}
+        onCancel={() => !fallbackLoading && setFallbackModal(null)}
+      />
     </div>
   );
 }

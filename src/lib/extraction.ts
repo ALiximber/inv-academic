@@ -1,36 +1,76 @@
 /* ==========================================================
    File Extraction — DOCX, PDF, TXT
+   Supports local extraction (unpdf, mammoth) + Gemini fallback
    ========================================================== */
 
 import mammoth from 'mammoth';
+import { extractText as extractPdfText } from 'unpdf';
 import { ExtractionResult } from './types';
+import { extractTextWithGemini } from './gemini';
 
 const MAX_TEXT_LENGTH = 100000; // ~100K characters
+
+export class LocalExtractionError extends Error {
+  canFallbackToGemini: boolean;
+  constructor(message: string, canFallbackToGemini = true) {
+    super(message);
+    this.name = 'LocalExtractionError';
+    this.canFallbackToGemini = canFallbackToGemini;
+  }
+}
+
+export interface ExtractOptions {
+  useGemini?: boolean;
+}
 
 export async function extractText(
   buffer: Buffer,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  options?: ExtractOptions
 ): Promise<ExtractionResult> {
   const warnings: string[] = [];
   let text = '';
+  const extractedVia: 'local' | 'gemini' = options?.useGemini ? 'gemini' : 'local';
 
-  try {
-    if (
-      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      fileName.endsWith('.docx')
-    ) {
-      text = await extractDocx(buffer, warnings);
-    } else if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
-      text = await extractPdf(buffer, warnings);
-    } else if (mimeType === 'text/plain' || fileName.endsWith('.txt')) {
-      text = buffer.toString('utf-8');
-    } else {
-      throw new Error(`Formato de archivo no soportado: ${mimeType || fileName}`);
+  // Si el usuario autorizó procesar con Gemini
+  if (options?.useGemini) {
+    try {
+      text = await extractTextWithGemini(buffer, mimeType, fileName);
+      warnings.push('Texto extraído exitosamente mediante Gemini (visión y OCR inteligente).');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al procesar con Gemini';
+      throw new Error(`Error al procesar el archivo con Gemini: ${msg}`);
     }
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error desconocido';
-    throw new Error(`Error al extraer texto del archivo: ${msg}`);
+  } else {
+    // Intento de extracción local
+    try {
+      const lowerName = fileName.toLowerCase();
+      if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        lowerName.endsWith('.docx')
+      ) {
+        text = await extractDocx(buffer, warnings);
+      } else if (mimeType === 'application/pdf' || lowerName.endsWith('.pdf')) {
+        text = await extractPdf(buffer, warnings);
+      } else if (mimeType === 'text/plain' || lowerName.endsWith('.txt')) {
+        text = buffer.toString('utf-8');
+      } else {
+        throw new LocalExtractionError(
+          `Formato de archivo no soportado localmente: ${mimeType || fileName}.`,
+          false
+        );
+      }
+    } catch (error) {
+      if (error instanceof LocalExtractionError) {
+        throw error;
+      }
+      const msg = error instanceof Error ? error.message : 'Error desconocido';
+      throw new LocalExtractionError(
+        `No se pudo extraer texto de forma local: ${msg}`,
+        true
+      );
+    }
   }
 
   // Normalize
@@ -50,12 +90,13 @@ export async function extractText(
   }
 
   if (text.trim().length === 0) {
-    throw new Error(
-      'No se pudo extraer texto del archivo. El documento puede estar vacío, contener solo imágenes, o estar protegido.'
+    throw new LocalExtractionError(
+      'El archivo no contiene texto extraíble localmente. Puede ser un documento escaneado (imagen) o estar protegido.',
+      true
     );
   }
 
-  return { text, warnings, truncated, originalLength };
+  return { text, warnings, truncated, originalLength, extractedVia };
 }
 
 async function extractDocx(buffer: Buffer, warnings: string[]): Promise<string> {
@@ -77,23 +118,22 @@ async function extractDocx(buffer: Buffer, warnings: string[]): Promise<string> 
 }
 
 async function extractPdf(buffer: Buffer, warnings: string[]): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string; numpages: number }>;
-  const data = await pdfParse(buffer);
+  const uint8Array = new Uint8Array(buffer);
+  const { text, totalPages } = await extractPdfText(uint8Array, { mergePages: true });
 
-  if (!data.text || data.text.trim().length === 0) {
-    throw new Error(
-      'El PDF no contiene texto extraíble. Puede ser un documento escaneado (imagen). ' +
-      'Para revisar este tipo de documentos, copia el texto manualmente o utiliza un servicio de OCR.'
+  if (!text || text.trim().length === 0) {
+    throw new LocalExtractionError(
+      'El PDF no contiene texto digital extraíble. Puede tratarse de un documento escaneado (imagen).',
+      true
     );
   }
 
-  if (data.numpages > 1) {
+  if (totalPages > 1) {
     warnings.push(
-      `El PDF contiene ${data.numpages} páginas. La extracción de texto puede afectar la distribución original de los elementos, ` +
+      `El PDF contiene ${totalPages} páginas. La extracción de texto puede afectar la distribución original de los elementos, ` +
       'especialmente tablas, columnas múltiples, notas al pie y encabezados.'
     );
   }
 
-  return data.text;
+  return text;
 }

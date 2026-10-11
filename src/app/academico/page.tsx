@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ACADEMIC_GENRES, REVIEW_DIMENSIONS, findGenreById } from '@/lib/genres';
 import type { AcademicGenre, EvaluationResult, ExtractionResult } from '@/lib/types';
 import ResultsView from '@/components/results/ResultsView';
+import GeminiFallbackModal from '@/components/modals/GeminiFallbackModal';
 
 type Step = 'genre' | 'config' | 'input' | 'reference' | 'analyzing' | 'results';
 
@@ -42,20 +43,41 @@ export default function AcademicoPage() {
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Gemini Fallback Modal
+  const [fallbackModal, setFallbackModal] = useState<{
+    file: File;
+    target: 'student' | 'reference';
+    setter: (t: string) => void;
+    warnSetter: (w: string[]) => void;
+    reason: string;
+  } | null>(null);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+
   // File upload handler
   const handleFileUpload = useCallback(async (
     file: File,
     setter: (text: string) => void,
     warningSetter: (warnings: string[]) => void
   ) => {
+    setError(null);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
       const res = await fetch('/api/extract', { method: 'POST', body: formData });
-      const data: ExtractionResult & { error?: string } = await res.json();
+      const data: ExtractionResult & { error?: string; canFallbackToGemini?: boolean } = await res.json();
 
       if (!res.ok) {
+        if (data.canFallbackToGemini) {
+          setFallbackModal({
+            file,
+            target: setter === setStudentText ? 'student' : 'reference',
+            setter,
+            warnSetter: warningSetter,
+            reason: data.error || 'No fue posible extraer texto digital de forma local.',
+          });
+          return;
+        }
         setError(data.error || 'Error al extraer el texto del archivo.');
         return;
       }
@@ -73,6 +95,35 @@ export default function AcademicoPage() {
       setError('Error de conexión al procesar el archivo.');
     }
   }, []);
+
+  const handleConfirmGeminiFallback = useCallback(async () => {
+    if (!fallbackModal) return;
+    setFallbackLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', fallbackModal.file);
+      formData.append('useGemini', 'true');
+
+      const res = await fetch('/api/extract', { method: 'POST', body: formData });
+      const data: ExtractionResult & { error?: string } = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Error al procesar el archivo con Gemini.');
+        setFallbackModal(null);
+        return;
+      }
+
+      fallbackModal.setter(data.text);
+      fallbackModal.warnSetter(data.warnings || []);
+      setFallbackModal(null);
+    } catch {
+      setError('Error de conexión al procesar el archivo con Gemini.');
+      setFallbackModal(null);
+    } finally {
+      setFallbackLoading(false);
+    }
+  }, [fallbackModal]);
 
   // Toggle dimension
   const toggleDimension = (id: string) => {
@@ -758,6 +809,16 @@ export default function AcademicoPage() {
           )}
         </div>
       </main>
+
+      <GeminiFallbackModal
+        isOpen={!!fallbackModal}
+        fileName={fallbackModal?.file.name || ''}
+        targetLabel={fallbackModal?.target === 'student' ? 'Texto del estudiante' : 'Documento de referencia'}
+        reason={fallbackModal?.reason}
+        loading={fallbackLoading}
+        onConfirm={handleConfirmGeminiFallback}
+        onCancel={() => !fallbackLoading && setFallbackModal(null)}
+      />
     </div>
   );
 }

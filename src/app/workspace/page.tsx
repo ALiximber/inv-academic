@@ -21,6 +21,7 @@ import {
 import { ACADEMIC_GENRES, REVIEW_DIMENSIONS, findGenreById } from '@/lib/genres';
 import GenreStructureMap from '@/components/structure/GenreStructureMap';
 import StructureResults from '@/components/structure/StructureResults';
+import GeminiFallbackModal from '@/components/modals/GeminiFallbackModal';
 
 export default function WorkspacePage() {
   // ── Text & file
@@ -48,6 +49,16 @@ export default function WorkspacePage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRefSection, setShowRefSection] = useState(false);
+
+  // ── Gemini fallback modal state
+  const [fallbackModal, setFallbackModal] = useState<{
+    file: File;
+    target: 'student' | 'reference';
+    setter: (t: string) => void;
+    warnSetter: (w: string[]) => void;
+    reason: string;
+  } | null>(null);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
 
   // ── Results
   const [result, setResult] = useState<EvaluationResult | null>(null);
@@ -95,16 +106,61 @@ export default function WorkspacePage() {
     setter: (t: string) => void,
     warnSetter: (w: string[]) => void
   ) => {
+    setError(null);
     const formData = new FormData();
     formData.append('file', file);
     try {
       const res = await fetch('/api/extract', { method: 'POST', body: formData });
-      const data: ExtractionResult & { error?: string } = await res.json();
-      if (!res.ok) { setError(data.error || 'Error al extraer el texto.'); return; }
+      const data: ExtractionResult & { error?: string; canFallbackToGemini?: boolean } = await res.json();
+      if (!res.ok) {
+        if (data.canFallbackToGemini) {
+          setFallbackModal({
+            file,
+            target: setter === setStudentText ? 'student' : 'reference',
+            setter,
+            warnSetter,
+            reason: data.error || 'No fue posible extraer texto digital de manera local.',
+          });
+          return;
+        }
+        setError(data.error || 'Error al extraer el texto.');
+        return;
+      }
       setter(data.text);
       warnSetter(data.warnings || []);
-    } catch { setError('Error de conexión al procesar el archivo.'); }
+    } catch {
+      setError('Error de conexión al procesar el archivo.');
+    }
   }, []);
+
+  const handleConfirmGeminiFallback = useCallback(async () => {
+    if (!fallbackModal) return;
+    setFallbackLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', fallbackModal.file);
+      formData.append('useGemini', 'true');
+
+      const res = await fetch('/api/extract', { method: 'POST', body: formData });
+      const data: ExtractionResult & { error?: string } = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Error al procesar el archivo con Gemini.');
+        setFallbackModal(null);
+        return;
+      }
+
+      fallbackModal.setter(data.text);
+      fallbackModal.warnSetter(data.warnings || []);
+      setFallbackModal(null);
+    } catch {
+      setError('Error de conexión al procesar el archivo con Gemini.');
+      setFallbackModal(null);
+    } finally {
+      setFallbackLoading(false);
+    }
+  }, [fallbackModal]);
 
   // ── Toggle dimension
   const toggleDimension = (id: string) => {
@@ -901,6 +957,17 @@ export default function WorkspacePage() {
           )}
         </aside>
       </div>
+
+      {/* ── Fallback confirmation modal ── */}
+      <GeminiFallbackModal
+        isOpen={!!fallbackModal}
+        fileName={fallbackModal?.file.name || ''}
+        targetLabel={fallbackModal?.target === 'student' ? 'Texto a revisar' : 'Documento de referencia'}
+        reason={fallbackModal?.reason}
+        loading={fallbackLoading}
+        onConfirm={handleConfirmGeminiFallback}
+        onCancel={() => !fallbackLoading && setFallbackModal(null)}
+      />
     </div>
   );
 }

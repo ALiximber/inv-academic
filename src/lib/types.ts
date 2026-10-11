@@ -180,6 +180,8 @@ export interface ExtractionResult {
   warnings: string[];
   truncated: boolean;
   originalLength: number;
+  extractedVia?: 'local' | 'gemini';
+  canFallbackToGemini?: boolean;
 }
 
 /* ---- Category Display Helpers ---- */

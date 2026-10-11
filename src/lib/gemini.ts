@@ -230,3 +230,73 @@ INSTRUCCIONES:
   }
 }
 
+export async function extractTextWithGemini(
+  buffer: Buffer,
+  mimeType: string,
+  fileName: string
+): Promise<string> {
+  const client = getAI();
+  const base64Data = buffer.toString('base64');
+
+  const effectiveMimeType =
+    mimeType && mimeType.includes('/')
+      ? mimeType
+      : fileName.toLowerCase().endsWith('.pdf')
+      ? 'application/pdf'
+      : fileName.toLowerCase().endsWith('.docx')
+      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      : 'application/octet-stream';
+
+  const prompt = `TAREA: Extrae y transcribe con máxima fidelidad todo el texto legible contenido en este documento adjunto.
+
+INSTRUCCIONES:
+1. Transcribe todo el contenido textual exactamente como aparece, preservando párrafos, títulos, secciones y orden de lectura original.
+2. Si es un documento escaneado o imagen, realiza OCR cuidadoso respetando la ortografía original.
+3. NO agregues resúmenes, comentarios, notas introductorias ni saludos.
+4. NO envuelvas la respuesta en bloques de código (evita \`\`\`).
+5. Devuelve única y exclusivamente el texto del documento.`;
+
+  let retries = 3;
+  let delay = 1500;
+  let response;
+
+  while (retries > 0) {
+    try {
+      response = await client.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: effectiveMimeType,
+                  data: base64Data,
+                },
+              },
+              { text: prompt },
+            ],
+          },
+        ],
+        config: {
+          temperature: 0.1,
+        },
+      });
+      break;
+    } catch (error: any) {
+      const isRetryable = error?.status === 503 || error?.status === 429;
+      retries--;
+      if (!isRetryable || retries === 0) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
+
+  const text = response?.text?.trim() || '';
+  if (!text) {
+    throw new Error('Gemini no pudo extraer texto legible del documento adjunto.');
+  }
+
+  return text;
+}
+

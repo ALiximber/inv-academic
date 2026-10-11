@@ -1,15 +1,16 @@
 /* ==========================================================
    API Route: /api/extract
-   File text extraction endpoint
+   File text extraction endpoint (local + Gemini fallback)
    ========================================================== */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { extractText } from '@/lib/extraction';
+import { extractText, LocalExtractionError } from '@/lib/extraction';
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const useGemini = formData.get('useGemini') === 'true';
 
     if (!file) {
       return NextResponse.json(
@@ -18,11 +19,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 10MB)
-    const MAX_SIZE = 10 * 1024 * 1024;
+    // Validate file size (max 20MB)
+    const MAX_SIZE = 20 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { error: 'El archivo excede el tamaño máximo de 10 MB.' },
+        { error: 'El archivo excede el tamaño máximo permitido (20 MB).' },
         { status: 400 }
       );
     }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'Formato de archivo no soportado. Se aceptan archivos DOCX, PDF (con texto extraíble) y TXT.',
+            'Formato de archivo no soportado. Se aceptan archivos DOCX, PDF y TXT.',
         },
         { status: 400 }
       );
@@ -54,12 +55,22 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const result = await extractText(buffer, file.name, file.type);
+    const result = await extractText(buffer, file.name, file.type, { useGemini });
 
     return NextResponse.json(result);
   } catch (error) {
     console.error('Extraction error:', error);
+    if (error instanceof LocalExtractionError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          canFallbackToGemini: error.canFallbackToGemini,
+        },
+        { status: 422 }
+      );
+    }
+
     const message = error instanceof Error ? error.message : 'Error al procesar el archivo';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, canFallbackToGemini: false }, { status: 500 });
   }
 }
